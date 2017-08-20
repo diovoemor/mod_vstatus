@@ -318,12 +318,13 @@ int handle_else(request_rec * r){
     ap_rputs("<tr><td>\n",r);
     ap_rvputs(r,HEADERIMG,"\n");
     ap_rputs("<h2>mod_vstatus: internal config", r);
-    if (_WIN32) {
+
+#ifdef _WIN32
         ap_rputs(gconf->computername,r);
-    }
-    else {
+#else
         ap_rputs((char *) apr_psprintf(r->pool, "%s",r->server->server_hostname),r);
-    }
+#endif
+
     ap_rputs("</h2>\n",r);
     ap_rvputs(r,"<dt><font class=\"ctime\">Current Time: ",ap_ht_time(r->pool, apr_time_now(), DEFAULT_TIME_FORMAT, 0),"</font></dt>\n", NULL);
     ap_rputs((char *) apr_psprintf(r->pool, "Number of Filters: %i",apr_hash_count (gconf->format)),r);
@@ -417,12 +418,11 @@ int handle_html(request_rec * r,int rel,int delta,int dump){
     ap_rputs("<tr><td>\n",r);
     ap_rputs(HEADERIMG,r);
     ap_rputs("<h2>HTTP responses for ", r);
-    if (_WIN32) {
+#ifdef _WIN32
         ap_rputs(gconf->computername,r);
-    }
-    else {
+#else
         ap_rputs((char *) apr_psprintf(r->pool, "%s",r->server->server_hostname),r);
-    }
+#endif
     ap_rputs("</h2>\n",r);
     ap_rvputs(r,"<dt><font class=\"ctime\">Current Time: ",ap_ht_time(r->pool, apr_time_now(), DEFAULT_TIME_FORMAT, 0),"</font></dt>\n", NULL);
     ap_rputs("<hr>\n",r);
