@@ -17,6 +17,10 @@
 #include "ver.h"
 #include "favicon.h"
 
+#ifdef APLOG_USE_MODULE
+APLOG_USE_MODULE(vstatus);
+#endif
+
 module AP_MODULE_DECLARE_DATA vstatus_module;
 
 //#define DEBUG 1
