@@ -151,7 +151,6 @@ int handle(request_rec * r){
     char *format;
     char *key = r->path_info;
     int delta,rel;
-//  char *val;
     apr_uint32_t *val;
     apr_time_t time = getTime(r->request_time);
 
@@ -275,7 +274,6 @@ int print_status_page(request_rec * r){
         ap_rputs("</td>", r);
         ap_rputs("<td>", r);
         ap_rputs((char *) apr_psprintf(r->pool, "%s",rbuffer[0].data[i].hostname), r);
-//rbuffer[0].data[i].hostname
         ap_rputs("</td>", r);
         ap_rputs("</tr>", r);
     }
@@ -358,12 +356,10 @@ int handle_else(request_rec * r){
 int handle_html(request_rec * r,int rel,int delta,int dump){
 
     char* key;
-    apr_ssize_t klen;
     apr_array_header_t* val;
-    apr_hash_index_t *index;
     const int *codes;
     int num_codes;
-    int i,j,k;
+    int i,j;
 
     char *f = r->path_info;
     *f++; // remove foremost slash
@@ -477,12 +473,9 @@ int handle_html(request_rec * r,int rel,int delta,int dump){
     return OK;
 }
 int handle_csv(request_rec * r,int rel,int delta,int dump){
-    char* key;
-    apr_ssize_t klen;
     apr_array_header_t* val;
-    apr_hash_index_t *index;
     int num_codes;
-    int i,j,k,iter;
+    int i,j,iter;
     int t,p,pos,deltapos;
     int iter_max;
     const int *codes;
@@ -562,12 +555,9 @@ int handle_csv(request_rec * r,int rel,int delta,int dump){
 }
 
 int handle_json(request_rec * r,int rel,int delta,int dump){
-    char* key;
-    apr_ssize_t klen;
     apr_array_header_t* val;
-    apr_hash_index_t *index;
     int num_codes;
-    int i,j,k,iter;
+    int i,j,iter;
     int t,p,pos,deltapos;
     int iter_max;
     const int *codes;
@@ -640,13 +630,10 @@ int handle_json(request_rec * r,int rel,int delta,int dump){
 
 int handle_google(request_rec * r){
 
-    char* key;
-    apr_ssize_t klen;
     apr_array_header_t* val;
-    apr_hash_index_t *index;
     int *codes;
     int num_codes;
-    int i,j,k;
+    int i,j;
 
     char *f = r->path_info;
     *f++; // remove foremost slash
