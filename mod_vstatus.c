@@ -321,7 +321,7 @@ int handle_else(request_rec * r){
     char* type;
 
     ap_set_content_type(r, "text/html");
-    ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: detail</title>\n",r);
+    ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: details</title>\n",r);
     ap_rputs(FAVICON,r);
     ap_rputs(STYLESHEET,r);
 
@@ -430,7 +430,7 @@ int handle_html(request_rec * r,int rel,int delta,int dump){
 
 
     ap_set_content_type(r, "text/html");
-    ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: detail</title>\n</head>\n",r);
+    ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: details</title>\n",r);
     ap_rputs(FAVICON,r);
     ap_rputs(STYLESHEET,r);
 
