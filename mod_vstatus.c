@@ -2,6 +2,10 @@
 #ifdef _WIN32
 // use apr_atomic.h on Win32 for proper DLL linkage
 #include "apr_atomic.h"
+#ifdef _MSC_VER
+// Oh the noise!
+#pragma warning( disable : 4047 90 4101 4133 4244 )
+#endif
 #endif
 #include "apr_strings.h"
 #include "apr_lib.h"
@@ -86,6 +90,7 @@ vstatus_ringbuffer *rbuffer;
 vstatus_cfg *gconf;
 static int num_vhosts = 0;
 
+int print_status_page(request_rec * r);
 int handle_html(request_rec * r,int rel,int delta,int dump);
 int handle_json(request_rec * r,int rel,int delta,int dump);
 int handle_csv(request_rec * r,int rel,int delta,int dump);
@@ -298,7 +303,6 @@ int print_status_page(request_rec * r){
 
 int handle_else(request_rec * r){
     apr_hash_index_t *hi;
-    int i;
     char* key;
     char* val;
     char* format;
@@ -375,8 +379,6 @@ int handle_else(request_rec * r){
 }
 
 int handle_html(request_rec * r,int rel,int delta,int dump){
-
-    char* key;
     apr_array_header_t* val;
     const int *codes;
     int num_codes;
@@ -762,7 +764,6 @@ int handle_google(request_rec * r){
 }
 
 static void *init_vstatus_cfg(apr_pool_t* pool, server_rec* s){
-    apr_status_t rv;
 
     vstatus_cfg *cfg = apr_pcalloc(pool, sizeof(vstatus_cfg));
     cfg->pool=pool;
@@ -862,7 +863,6 @@ static int init(apr_pool_t * p, apr_pool_t * plog, apr_pool_t * ptemp, server_re
     apr_status_t status;
     apr_size_t shm_size;
     apr_size_t retsize;
-    apr_status_t rv;
     void *shmstart;
     apr_hash_t* hosts=apr_hash_make(p);
     apr_hash_index_t *hi;
@@ -953,15 +953,27 @@ ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,"mod_reqstatus : SHM Adr %u",shmstart);
 ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,"mod_reqstatus : Segmenting SHM");
 #endif
 
+#ifdef _MSC_VER
+// We aren't smart enough to figure out the size of void* like GCC. error C2036
+    bucket=(volatile int *)shmstart;
+    old_bucket=(int *)shmstart+sizeof(int);
+    rbuffer = (int *)shmstart+2*sizeof(int);
+#else
     bucket=shmstart;
     old_bucket=shmstart+sizeof(int);
     rbuffer = shmstart+2*sizeof(int);
+#endif
 
     memset(shmstart, 0, retsize);
 
     for(i=0;i<gconf->histSize;i++){
         j=1;
+#ifdef _MSC_VER
+// We aren't smart enough to figure out the size of void* like GCC. error C2036
+        rbuffer[i].data = (int *)shmstart+2*sizeof(int) + ((cfg->histSize)*sizeof(vstatus_ringbuffer)) + i*(num_vhosts*sizeof(vstatus_data));
+#else
         rbuffer[i].data = shmstart+2*sizeof(int) + ((cfg->histSize)*sizeof(vstatus_ringbuffer)) + i*(num_vhosts*sizeof(vstatus_data));
+#endif
 
         for (hi = apr_hash_first(p, hosts); hi; hi = apr_hash_next(hi)) {
             j++;
