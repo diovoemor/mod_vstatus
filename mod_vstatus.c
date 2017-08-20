@@ -78,6 +78,8 @@ typedef struct {
     apr_pool_t* pool;
     int histSize;
     int granularity;
+    const char *header_string;
+    const char *use_stylesheet;
 #ifdef _WIN32
     const char *computername;
 #endif
@@ -268,7 +270,16 @@ int print_status_page(request_rec * r){
     ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: internal config</title>\n",r);
     ap_rputs(FAVICON,r);
     ap_rputs(STYLESHEET,r);
-    ap_rputs("</head>\n<body>\n",r);
+
+    if (gconf->header_string) {
+        ap_rvputs(r,"\n",gconf->header_string);
+    }
+    if (gconf->use_stylesheet) {
+        ap_rvputs(r,"\n<link rel=\"stylesheet\" type=\"text/css\" href=\"",
+                  gconf->use_stylesheet,"\">");
+    }
+
+    ap_rputs("\n</head>\n<body>\n",r);
     ap_rputs("<center><table cellpadding='10' cellspacing='0' border=0>\n",r);
     ap_rputs("<tr><td>\n",r);
     ap_rvputs(r,HEADERIMG,"\n");
@@ -313,7 +324,16 @@ int handle_else(request_rec * r){
     ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: detail</title>\n",r);
     ap_rputs(FAVICON,r);
     ap_rputs(STYLESHEET,r);
-    ap_rputs("</head>\n<body>\n",r);
+
+    if (gconf->header_string) {
+        ap_rvputs(r,"\n",gconf->header_string);
+    }
+    if (gconf->use_stylesheet) {
+        ap_rvputs(r,"\n<link rel=\"stylesheet\" type=\"text/css\" href=\"",
+                  gconf->use_stylesheet,"\">");
+    }
+
+    ap_rputs("\n</head>\n<body>\n",r);
     ap_rputs("<center><table cellpadding='10' cellspacing='0' border=0>\n",r);
     ap_rputs("<tr><td>\n",r);
     ap_rvputs(r,HEADERIMG,"\n");
@@ -413,7 +433,16 @@ int handle_html(request_rec * r,int rel,int delta,int dump){
     ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: detail</title>\n</head>\n",r);
     ap_rputs(FAVICON,r);
     ap_rputs(STYLESHEET,r);
-    ap_rputs("</head>\n<body>\n",r);
+
+    if (gconf->header_string) {
+        ap_rvputs(r,"\n",gconf->header_string);
+    }
+    if (gconf->use_stylesheet) {
+        ap_rvputs(r,"\n<link rel=\"stylesheet\" type=\"text/css\" href=\"",
+                  gconf->use_stylesheet,"\">");
+    }
+
+    ap_rputs("\n</head>\n<body>\n",r);
     ap_rputs("<center><table cellpadding='10' cellspacing='0' border=0>\n",r);
     ap_rputs("<tr><td>\n",r);
     ap_rputs(HEADERIMG,r);
@@ -830,7 +859,15 @@ static const char* setComment(cmd_parms* cmd, void* cfg,const char *filter, cons
     return NULL;
 }
 
+static const char* setHeader(cmd_parms* cmd, void* cfg,const char* val ){
+    gconf->header_string=val;
+    return NULL;
+}
 
+static const char* setStylesheet(cmd_parms* cmd, void* cfg,const char* val ){
+    gconf->use_stylesheet=val;
+    return NULL;
+}
 
 static const command_rec cmds[] = {
     AP_INIT_ITERATE2("vstatusFilter", setFilter,
@@ -854,6 +891,12 @@ static const command_rec cmds[] = {
     AP_INIT_TAKE2("vstatusComment", setComment,
         NULL, RSRC_CONF | ACCESS_CONF,
         "Set Comment"),
+    AP_INIT_TAKE1("vstatusHeader", setHeader,
+        NULL, RSRC_CONF | ACCESS_CONF,
+        "Add stuff (one line) inside <head> of HTML output"),
+    AP_INIT_TAKE1("vstatusStylesheet", setStylesheet,
+        NULL, RSRC_CONF | ACCESS_CONF,
+        "Set path (relative to DocumentRoot) to a customr stylesheet"),
     {NULL}
 };
 
@@ -955,9 +998,9 @@ ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,"mod_reqstatus : Segmenting SHM");
 
 #ifdef _MSC_VER
 // We aren't smart enough to figure out the size of void* like GCC. error C2036
-    bucket=(volatile int *)shmstart;
-    old_bucket=(int *)shmstart+sizeof(int);
-    rbuffer = (int *)shmstart+2*sizeof(int);
+    bucket=(char *)shmstart;
+    old_bucket=(char *)shmstart+sizeof(int);
+    rbuffer = (char *)shmstart+2*sizeof(int);
 #else
     bucket=shmstart;
     old_bucket=shmstart+sizeof(int);
@@ -970,7 +1013,7 @@ ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,"mod_reqstatus : Segmenting SHM");
         j=1;
 #ifdef _MSC_VER
 // We aren't smart enough to figure out the size of void* like GCC. error C2036
-        rbuffer[i].data = (int *)shmstart+2*sizeof(int) + ((cfg->histSize)*sizeof(vstatus_ringbuffer)) + i*(num_vhosts*sizeof(vstatus_data));
+        rbuffer[i].data = (char *)shmstart+2*sizeof(int) + ((cfg->histSize)*sizeof(vstatus_ringbuffer)) + i*(num_vhosts*sizeof(vstatus_data));
 #else
         rbuffer[i].data = shmstart+2*sizeof(int) + ((cfg->histSize)*sizeof(vstatus_ringbuffer)) + i*(num_vhosts*sizeof(vstatus_data));
 #endif
