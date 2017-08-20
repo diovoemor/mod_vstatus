@@ -1,4 +1,8 @@
 #include "apr.h"
+#ifdef _WIN32
+// use apr_atomic.h on Win32 for proper DLL linkage
+#include "apr_atomic.h"
+#endif
 #include "apr_strings.h"
 #include "apr_lib.h"
 #include "apr_version.h"
@@ -71,6 +75,9 @@ typedef struct {
     apr_pool_t* pool;
     int histSize;
     int granularity;
+#ifdef _WIN32
+    const char *computername;
+#endif
 } vstatus_cfg;
 
 volatile int *bucket;
@@ -85,12 +92,14 @@ int handle_json(request_rec * r,int rel,int delta,int dump);
 int handle_csv(request_rec * r,int rel,int delta,int dump);
 int handle_google(request_rec * r);
 int handle_else(request_rec * r);
+#ifndef _WIN32
+// using apr_atomic.h on Win32 for proper DLL linkage
 apr_status_t apr_atomic_init(apr_pool_t *p);
 apr_uint32_t apr_atomic_inc32(volatile apr_uint32_t *mem);
 apr_uint32_t apr_atomic_read32(volatile apr_uint32_t *mem);
 void apr_atomic_set32(volatile apr_uint32_t *mem,apr_uint32_t val);
 void apr_hash_this(apr_hash_index_t *hi, const void **key, apr_ssize_t *klen, void **val);
-
+#endif
 unsigned long hostindex(char *str){
     int i;
 
