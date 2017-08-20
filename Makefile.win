@@ -1,5 +1,5 @@
 ##----------------------------------------------------------------------------
-# Created with genmake.pl v1.1 on Sat Aug 19 09:33:41 2017
+# Created with genmake.pl v1.1 on Sun Aug 20 00:39:43 2017
 # genmake.pl home: http://muquit.com/muquit/software/
 # Copryright: GNU GPL (http://www.gnu.org/copyleft/gpl.html)
 ##----------------------------------------------------------------------------
@@ -11,63 +11,58 @@
 !MESSAGE 
 !MESSAGE    Arguments
 !MESSAGE 
-!MESSAGE    APACHE (required)
-!MESSAGE    ARCH   (optional) defaults to x86
-!MESSAGE    VC     (optional) defaults to C89 code (CV<14)
+!MESSAGE    APACHE   (required)
+!MESSAGE    ARCH     (optional) defaults to x86
+!MESSAGE    VC       (optional) defaults to C89 code (VC<14)
+!MESSAGE    BRANDING (optional) Adds "Win32 Binary by Distro Name"
+!MESSAGE             to files VersionInfo (Win64 on x64 builds)
 !MESSAGE 
 !ERROR
+!ENDIF
 
-SRCS = mod_vstatus.c 
-OBJS = mod_vstatus.obj
-RCSRC=mod_vstatus.rc
-RCRES=mod_vstatus.res
-
-RC=rc
-MT=mt /nologo
 CC= cl
 LINKER=link -nologo
+RC=rc
+MT=mt /nologo
 
-DEPS= kernel32.lib libhttpd.lib libapr-1.lib libaprutil-1.lib /libpath:"$(APACHE)\lib"
-
-!IF "$(ARCH)" == "x64" || "$(ARCH)" == "X64"
-!MESSAGE Building mod_vstatus for x64
-!MESSAGE 
-DEFS=  /nologo /O2 /MD /W3 -DWIN32 -D_WIN32 -D_WIN64 -DWINNT=1 -I$(APACHE)\include /c
-DEPS= /machine:X64 $(DEPS)
-RCVARS=-r -D_WIN64 $(RCSRC)
-!ElSE
-!MESSAGE Building mod_vstatus for x64
-!MESSAGE 
-DEFS=  /nologo /O2 /MD /W3 -DWIN32 -D_WIN32 -D_WIN64 -DWINNT=1 -I$(APACHE)\include /c
-DEPS= /machine:X86 $(DEPS)
-RCVARS=-r -D_WIN64 $(RCSRC)
-!ENDIF
-
-!IF "$(VC)" >= "11"
-RCVARS= -nologo $(RCVARS)
-
-INCLUDES=  -I. 
 LIBRARY= mod_vstatus.so
+SRCS = mod_vstatus.c 
+RSRC = mod_vstatus.rc 
+RRES = mod_vstatus.res 
+OBJS = mod_vstatus.obj 
+
+!IF "$(BRANDING)" == ""
+# Do nothing
+!ELSE
+BRAND = -D_BRANDING="$(BRANDING)"
 !ENDIF
 
-# replace -O with -g in order to debug
+!IF ("$(ARCH)" == "x64" || "$(ARCH)" == "X64" )
+CFLAGS= /nologo /O2 /MD /W3 -DWIN32 -D_WIN32 -D_WIN64 /c
+ARCH=X64
+RCVARS=-D_WIN64 $(BRAND)
+!ELSE
+ARCH=X86
+CFLAGS= /nologo /O2 /MD /W3 -DWIN32 -D_WIN32 /c
+RCVARS=-D_WIN32 $(BRAND)
+!ENDIF
 
-DEFINES= $(INCLUDES) $(DEFS) 
-#CFLAGS=  $(cvars) $(cdebug) -nologo -G4 $(DEFINES)
+RCVARS=-r $(RCVARS) $(RSRC)
 
+DEFINES= -I. -I$(APACHE)\include $(CFLAGS)
 
-.c.obj:
-	$(CC) $(CFLAGS) $(DEFS) -c $< -Fo$@
+DEPS = kernel32.lib $(RRES) libhttpd.lib libapr-1.lib libaprutil-1.lib /libpath:$(APACHE)\lib
 
-all: $(LIBRARY)
+all: obj dll
 
-$(RCRES):
-	$(RC) $(RCVARS) $(RCSRC)
+obj:
+	$(CC) $(DEFINES) -c $(SRCS)
+	$(RC) $(RCVARS)
 
-$(LIBRARY): $(OBJS) $(RCRES)
+dll: 
 	$(LINKER) /dll $(DEPS) /manifest /OUT:$(LIBRARY) $(OBJS) 
-	!IF EXIST $(LIBRARY).manifest $(MT) -manifest $(LIBRARY).manifest \
-                                        -outputresource:$(LIBRARY);2
+        !IF EXIST $(LIBRARY).manifest $(MT) -manifest $(LIBRARY).manifest \
+                                            -outputresource:$(LIBRARY);2
 clean:
-	del *.obj *.exp *.lib *.so *.res *.*.man*
+	del $(OBJS) $(LIBRARY) $(RRES) *.lib *.exp *.manifest
 
