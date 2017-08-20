@@ -10,8 +10,11 @@ One thing I noticed about this module when I first started using is that if you 
 a ServerName with the allowed optional port assingment like;
 
   <VirtualHost *:443>
+
     ServerName www.example.com:443
+
     SSLEngine on
+
     ...
 
 This module will list that ServerName (with port assingment) but it will never show
