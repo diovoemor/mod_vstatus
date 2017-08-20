@@ -18,8 +18,7 @@
 #include "http_request.h"
 #include "util_script.h"
 #include "ap_mpm.h"
-#include "ver.h"
-#include "favicon.h"
+#include "mod_vstatus.h"
 
 #ifdef APLOG_USE_MODULE
 APLOG_USE_MODULE(vstatus);
@@ -263,8 +262,12 @@ int print_status_page(request_rec * r){
     ap_set_content_type(r, "text/html");
     ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: internal config</title>\n",r);
     ap_rputs(FAVICON,r);
-    ap_rputs("<body>\n",r);
-    ap_rputs("<h1>mod_vstatus</h1><h2>mod_vstatus: internal config</h2>", r);
+    ap_rputs(STYLESHEET,r);
+    ap_rputs("</head>\n<body>\n",r);
+    ap_rputs("<center><table cellpadding='10' cellspacing='0' border=0>\n",r);
+    ap_rputs("<tr><td>\n",r);
+    ap_rvputs(r,HEADERIMG,"\n");
+    ap_rputs("<h2>mod_vstatus: internal config", r);
     ap_rputs("<hline>\n",r);
     ap_rputs("<h2>Hosttable:</h2>", r);
     ap_rputs("<table border=1>", r);
@@ -305,11 +308,20 @@ int handle_else(request_rec * r){
     ap_set_content_type(r, "text/html");
     ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: detail</title>\n",r);
     ap_rputs(FAVICON,r);
-    ap_rputs("<body>\n",r);
-    ap_rputs("<h1>mod_vstatus</h1><h2>HTTP responses for ", r);
-    ap_rputs((char *) apr_psprintf(r->pool, "%s",r->server->server_hostname),r);
+    ap_rputs(STYLESHEET,r);
+    ap_rputs("</head>\n<body>\n",r);
+    ap_rputs("<center><table cellpadding='10' cellspacing='0' border=0>\n",r);
+    ap_rputs("<tr><td>\n",r);
+    ap_rvputs(r,HEADERIMG,"\n");
+    ap_rputs("<h2>mod_vstatus: internal config", r);
+    if (_WIN32) {
+        ap_rputs(gconf->computername,r);
+    }
+    else {
+        ap_rputs((char *) apr_psprintf(r->pool, "%s",r->server->server_hostname),r);
+    }
     ap_rputs("</h2>\n",r);
-    ap_rvputs(r, "<dt>Current Time: ",ap_ht_time(r->pool, apr_time_now(), DEFAULT_TIME_FORMAT, 0),"</dt>\n", NULL);
+    ap_rvputs(r,"<dt><font class=\"ctime\">Current Time: ",ap_ht_time(r->pool, apr_time_now(), DEFAULT_TIME_FORMAT, 0),"</font></dt>\n", NULL);
     ap_rputs((char *) apr_psprintf(r->pool, "Number of Filters: %i",apr_hash_count (gconf->format)),r);
 
     ap_rputs("<hr>\n",r);
@@ -396,11 +408,21 @@ int handle_html(request_rec * r,int rel,int delta,int dump){
 
     ap_set_content_type(r, "text/html");
     ap_rputs(DOCTYPE_HTML_3_2"<html>\n<head>\n<title>mod_vstatus: detail</title>\n</head>\n",r);
-    ap_rputs("<body>\n",r);
-    ap_rputs("<h1>mod_vstatus</h1><h2>HTTP responses for ", r);
-    ap_rputs((char *) apr_psprintf(r->pool, "%s",r->server->server_hostname),r);
+    ap_rputs(FAVICON,r);
+    ap_rputs(STYLESHEET,r);
+    ap_rputs("</head>\n<body>\n",r);
+    ap_rputs("<center><table cellpadding='10' cellspacing='0' border=0>\n",r);
+    ap_rputs("<tr><td>\n",r);
+    ap_rputs(HEADERIMG,r);
+    ap_rputs("<h2>HTTP responses for ", r);
+    if (_WIN32) {
+        ap_rputs(gconf->computername,r);
+    }
+    else {
+        ap_rputs((char *) apr_psprintf(r->pool, "%s",r->server->server_hostname),r);
+    }
     ap_rputs("</h2>\n",r);
-    ap_rvputs(r, "<dt>Current Time: ",ap_ht_time(r->pool, apr_time_now(), DEFAULT_TIME_FORMAT, 0),"</dt>\n", NULL);
+    ap_rvputs(r,"<dt><font class=\"ctime\">Current Time: ",ap_ht_time(r->pool, apr_time_now(), DEFAULT_TIME_FORMAT, 0),"</font></dt>\n", NULL);
     ap_rputs("<hr>\n",r);
 
 #ifdef DEBUG
@@ -481,6 +503,7 @@ int handle_html(request_rec * r,int rel,int delta,int dump){
     ap_rputs("</body>\n",r);
     return OK;
 }
+
 int handle_csv(request_rec * r,int rel,int delta,int dump){
     apr_array_header_t* val;
     int num_codes;
@@ -751,6 +774,9 @@ static void *init_vstatus_cfg(apr_pool_t* pool, server_rec* s){
     cfg->histSize=15;       //log 15 entries
     cfg->granularity=60;        //1 entry per minute
 
+#if _WIN32
+    cfg->computername=getenv("COMPUTERNAME");
+#endif
     gconf=cfg;
     return (void*)cfg;
 }
